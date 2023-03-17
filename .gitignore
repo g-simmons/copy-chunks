@@ -1,0 +1,20 @@
+out
+dist
+node_modules
+.vscode-test/
+*.vsix
+# Ignore built files
+dist/
+out/
+build/
+*.js
+
+# Ignore TypeScript build artifacts
+*.tsbuildinfo
+
+# Ignore node_modules
+node_modules/
+
+# Ignore vscode settings
+.vscode/
+.DS_Store
