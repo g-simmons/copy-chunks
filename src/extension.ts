@@ -22,7 +22,9 @@ export function activate(context: vscode.ExtensionContext) {
             'copyChunks',
             'Copy Chunks',
             vscode.ViewColumn.Beside,
-            {}
+            {
+                enableScripts: true,
+            }
         );
         panel.webview.html = getWebviewContent(chunks, chunkLength);
         panel.onDidDispose(() => {
@@ -82,6 +84,71 @@ function splitIntoChunks(tokens: string[], chunkLength: number): string[][] {
     return chunks;
 }
 
+const css = `
+.copy-box {
+    border: 1px solid #ccc;
+    padding: 10px;
+    margin-bottom: 20px;
+    box-shadow: 1px 1px 4px rgba(0, 0, 0, 0.3);
+    transition: all 0.3s ease;
+    overflow-x: auto;
+    white-space: pre-wrap;
+}
+.copy-box:hover {
+    transform: translate(0px, -2px);
+    box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.4);
+}
+.copy-button {
+    cursor: pointer;
+    border: none;
+    background-color: transparent;
+    margin-bottom: 5px;
+    font-size: 14px;
+}
+.copy-button:hover {
+    color: #007acc;
+}
+.chunk-length-input {
+    margin-bottom: 10px;
+    font-size: 14px;
+}
+`;
+
+
+const copyToClipboard = `
+    function copyToClipboard(button) {
+        const copyText = button.parentNode.querySelector('code').innerText;
+        navigator.clipboard.writeText(copyText).then(() => {
+            button.innerText = 'Copied!';
+            setTimeout(() => {
+                button.innerText = 'Copy';
+            }, 1000);
+        });
+    }
+`;
+
+const chunkLengthInput = `
+    const chunkLengthInput = document.querySelector('#chunkLengthInput');
+
+    chunkLengthInput.addEventListener('change', e => {
+        const chunkLength = parseInt(e.target.value);
+        const editor = vscode.window.activeTextEditor;
+        if (!editor) {
+            return;
+        }
+        const text = editor.document.getText();
+        const tokens = tokenize(text);
+        const chunks = splitIntoChunks(tokens, chunkLength);
+        const panel = vscode.window.createWebviewPanel(
+                'copyChunks',
+                'Copy Chunks',
+                vscode.ViewColumn.Beside,
+                {}
+            );
+        panel.webview.html = getWebviewContent(chunks, chunkLength);
+    });
+`;
+
 function getWebviewContent(chunks: string[][], chunkLength: number): string {
     let html = `
         <html>
@@ -89,33 +156,7 @@ function getWebviewContent(chunks: string[][], chunkLength: number): string {
                 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.2.0/styles/vs.min.css" integrity="sha512-sF+kSaZ1zjUB2cXkC9v+PSI4mJ4oU6dyNYW6BbU1mnZDj/soe1JRGW8sR26PoxgjPJBbUrTf+MB3qvlY2QDAA==" crossorigin="anonymous" />
                 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.2.0/highlight.min.js" integrity="sha512-nQPNF9xB+OxF6eO4CGR4j6WJ0LwSe1OgZXM+W97/G50xTh5vkXwoiK1V7zt1oiyQ2A7OsDjKpkhzf7zPmqayag==" crossorigin="anonymous"></script>
                 <style>
-                    .copy-box {
-                        border: 1px solid #ccc;
-                        padding: 10px;
-                        margin-bottom: 20px;
-                        box-shadow: 1px 1px 4px rgba(0, 0, 0, 0.3);
-                        transition: all 0.3s ease;
-                        overflow-x: auto;
-                        white-space: pre-wrap;
-                    }
-                    .copy-box:hover {
-                        transform: translate(0px, -2px);
-                        box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.4);
-                    }
-                    .copy-button {
-                        cursor: pointer;
-                        border: none;
-                        background-color: transparent;
-                        margin-bottom: 5px;
-                        font-size: 14px;
-                    }
-                    .copy-button:hover {
-                        color: #007acc;
-                    }
-                    .chunk-length-input {
-                        margin-bottom: 10px;
-                        font-size: 14px;
-                    }
+                    ${css} 
                 </style>
             </head>
             <body>
@@ -128,6 +169,10 @@ function getWebviewContent(chunks: string[][], chunkLength: number): string {
     const languageId = editor ? editor.document.languageId : undefined;
     for (const chunk of chunks) {
         const text = chunk.join('');
+        // check if text is empty or all whitespace, if so, skip
+        if (!text.trim()) {
+            continue;
+        }
         const language = languageId ? languageId : hljs.highlightAuto(text).language;
         const highlighted = hljs.highlight(text, { language }).value;
         html += `
@@ -141,33 +186,20 @@ function getWebviewContent(chunks: string[][], chunkLength: number): string {
     }
     html += `
             <script>
-                function copyToClipboard(button) {
-                    const copyText = button.parentNode.querySelector('code').innerText;
-                    navigator.clipboard.writeText(copyText).then(() => {
-                        button.innerText = 'Copied!';
-                        setTimeout(() => {
-                            button.innerText = 'Copy';
-                        }, 1000);
+                ${copyToClipboard}
+                ${chunkLengthInput}
+                const copyBoxes = document.querySelectorAll('.copy-box');
+                copyBoxes.forEach(copyBox => {
+                    copyBox.addEventListener('click', event => {
+                        const copyText = copyBox.querySelector('code').innerText;
+                        navigator.clipboard.writeText(copyText).then(() => {
+                            const button = copyBox.querySelector('.copy-button');
+                            button.innerText = 'Copied!';
+                            setTimeout(() => {
+                                button.innerText = 'Copy';
+                            }, 1000);
+                        });
                     });
-                }
-                const chunkLengthInput = document.querySelector('#chunkLengthInput');
-
-                chunkLengthInput.addEventListener('change', e => {
-                    const chunkLength = parseInt(e.target.value);
-                    const editor = vscode.window.activeTextEditor;
-                    if (!editor) {
-                        return;
-                    }
-                    const text = editor.document.getText();
-                    const tokens = tokenize(text);
-                    const chunks = splitIntoChunks(tokens, chunkLength);
-                    const panel = vscode.window.createWebviewPanel(
-                            'copyChunks',
-                            'Copy Chunks',
-                            vscode.ViewColumn.Beside,
-                            {}
-                        );
-                    panel.webview.html = getWebviewContent(chunks, chunkLength);
                 });
         </script>
     </body>
