@@ -44,7 +44,7 @@ To use the Copy Chunks extension, follow these steps:
 There are no known issues with this extension.
 
 ## Release Notes
-1.0.0
+0.0.1
 
 Initial release of Copy Chunks.
 
