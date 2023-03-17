@@ -64,61 +64,6 @@ function tokenize(text: string): string[] {
     return chunks;
 }
 
-// function splitIntoChunks(tokens: string[], chunkLength: number): string[][] {
-//     const chunks: string[][] = [];
-//     let chunk: string[] = [];
-
-//     for (const token of tokens) {
-//         if (chunk.length + token.length > chunkLength) {
-//             chunks.push(chunk);
-//             chunk = [];
-//         }
-
-//         chunk.push(token);
-//     }
-
-//     if (chunk.length > 0) {
-//         chunks.push(chunk);
-//     }
-
-//     return chunks;
-// }
-
-// function splitIntoChunks(tokens: string[], chunkLength: number): string[][] {
-//     const chunks: string[][] = [];
-//     let chunk: string[] = [];
-
-//     for (const token of tokens) {
-//         if (chunk.join('').length + token.length > chunkLength) {
-//             chunks.push(chunk);
-//             chunk = [];
-//         }
-
-//         const lines = token.split(/\r?\n/);
-//         for (let i = 0; i < lines.length; i++) {
-//             const line = lines[i];
-//             if (i < lines.length - 1) {
-//                 // Not the last line, add it as a new chunk
-//                 chunks.push([...chunk, line]);
-//                 chunk = [];
-//             } else if (chunk.join('').length + line.length > chunkLength) {
-//                 // Last line, but would exceed the chunk length, add it as a new chunk
-//                 chunks.push(chunk);
-//                 chunk = [line];
-//             } else {
-//                 // Last line, add it to the current chunk
-//                 chunk.push(line);
-//             }
-//         }
-//     }
-
-//     if (chunk.length > 0) {
-//         chunks.push(chunk);
-//     }
-
-//     return chunks;
-// }
-
 function splitIntoChunks(tokens: string[], chunkLength: number): string[][] {
     const chunks: string[][] = [];
     let chunk: string[] = [];
@@ -245,9 +190,9 @@ function getWebviewContent(chunks: string[][], chunkLength: number): string {
     const editor = vscode.window.activeTextEditor;
     const languageId = editor ? editor.document.languageId : undefined;
     for (const chunk of chunks) {
-        const text = chunk.join('');
+        const text = chunk.join('').trim();
         // check if text is empty or all whitespace, if so, skip
-        if (!text.trim()) {
+        if (!text) {
             continue;
         }
         const language = languageId ? languageId : hljs.highlightAuto(text).language;
@@ -256,7 +201,7 @@ function getWebviewContent(chunks: string[][], chunkLength: number): string {
             <div class="copy-box">
                 <button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
                 <pre><code class="hljs ${language}">
-                    ${highlighted}
+${highlighted}
                 </code></pre>
             </div>
         `;
