@@ -3,6 +3,7 @@
   "displayName": "Copy Chunks",
   "description": "Split a file into chunks of N tokens for easy copy-paste.",
   "version": "0.0.1",
+  "publisher": "g-simmons",
   "engines": {
     "vscode": "^1.76.0"
   },
