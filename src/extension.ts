@@ -64,17 +64,93 @@ function tokenize(text: string): string[] {
     return chunks;
 }
 
+// function splitIntoChunks(tokens: string[], chunkLength: number): string[][] {
+//     const chunks: string[][] = [];
+//     let chunk: string[] = [];
+
+//     for (const token of tokens) {
+//         if (chunk.length + token.length > chunkLength) {
+//             chunks.push(chunk);
+//             chunk = [];
+//         }
+
+//         chunk.push(token);
+//     }
+
+//     if (chunk.length > 0) {
+//         chunks.push(chunk);
+//     }
+
+//     return chunks;
+// }
+
+// function splitIntoChunks(tokens: string[], chunkLength: number): string[][] {
+//     const chunks: string[][] = [];
+//     let chunk: string[] = [];
+
+//     for (const token of tokens) {
+//         if (chunk.join('').length + token.length > chunkLength) {
+//             chunks.push(chunk);
+//             chunk = [];
+//         }
+
+//         const lines = token.split(/\r?\n/);
+//         for (let i = 0; i < lines.length; i++) {
+//             const line = lines[i];
+//             if (i < lines.length - 1) {
+//                 // Not the last line, add it as a new chunk
+//                 chunks.push([...chunk, line]);
+//                 chunk = [];
+//             } else if (chunk.join('').length + line.length > chunkLength) {
+//                 // Last line, but would exceed the chunk length, add it as a new chunk
+//                 chunks.push(chunk);
+//                 chunk = [line];
+//             } else {
+//                 // Last line, add it to the current chunk
+//                 chunk.push(line);
+//             }
+//         }
+//     }
+
+//     if (chunk.length > 0) {
+//         chunks.push(chunk);
+//     }
+
+//     return chunks;
+// }
+
 function splitIntoChunks(tokens: string[], chunkLength: number): string[][] {
     const chunks: string[][] = [];
     let chunk: string[] = [];
+    let lineCount = 0;
 
     for (const token of tokens) {
-        if (chunk.length + token.length > chunkLength) {
-            chunks.push(chunk);
-            chunk = [];
-        }
+        // split the token into lines
+        const lines = token.split(/\r?\n/);
 
-        chunk.push(token);
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i];
+
+            if (chunk.length > 0 && lineCount + i > chunkLength) {
+                // if adding this line would cause the chunk to exceed the limit,
+                // add the current chunk to the list and start a new chunk
+                chunks.push(chunk);
+                chunk = [];
+                lineCount = 0;
+            }
+
+            if (i < lines.length - 1) {
+                // if this is not the last line, add it to the chunk and count it
+                chunk.push(line + '\n');
+                lineCount += 1;
+            } else {
+                // if this is the last line, add it to the chunk and start a new chunk
+                chunk.push(line);
+                chunks.push(chunk);
+                chunk = [];
+                lineCount = 0;
+            }
+        }
     }
 
     if (chunk.length > 0) {
@@ -83,6 +159,7 @@ function splitIntoChunks(tokens: string[], chunkLength: number): string[][] {
 
     return chunks;
 }
+
 
 const css = `
 .copy-box {
